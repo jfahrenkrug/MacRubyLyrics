@@ -10,18 +10,21 @@ require 'json'
 
 framework "WebKit"
 
-class SongController < NSWindowController
-	LYRICS_API = "http://lyrics.wikia.com/api.php?fmt=json&"
+class SongController < NSWindowController	
+	attr_accessor :webView, :artistField, :songField, :button, :textView
 	
-	attr_accessor :webView, :artistField, :songField, :textView
+	def awakeFromNib
+		webView.preferences = webPreferences
+		webView.frameLoadDelegate = self
+	end
 	
 	def loadSong(sender)
-		NSLog("clicked " + webView.class.to_s)
+		enableFields(false)
+		textView.selectedRange = NSMakeRange(0, 0)
 		textView.string = "Searching..."
 		
 		speechSynthesizer.stopSpeaking
-		apiURL = LYRICS_API + "artist=#{CGI::escape(artistField.stringValue)}&song=#{CGI::escape(songField.stringValue)}"
-		NSLog(apiURL)
+		apiURL = "http://lyrics.wikia.com/api.php?fmt=json&artist=#{CGI::escape(artistField.stringValue)}&song=#{CGI::escape(songField.stringValue)}"
 		
 		# Load the JSON asynchronously
 		Thread.new do
@@ -38,7 +41,6 @@ class SongController < NSWindowController
 	# WebFrameLoadDelegate methods
 	def webView(webView, didFinishLoadForFrame:aWebFrame)
 		if aWebFrame == webView.mainFrame
-			NSLog("did finish...")
 			NSLog(webView.stringByEvaluatingJavaScriptFromString("document.innerText"))
 			lyrics = webView.stringByEvaluatingJavaScriptFromString("document.getElementsByClassName('lyricbox')[0].innerText")
 			# Remove ads by deleting first and last lines
@@ -46,6 +48,7 @@ class SongController < NSWindowController
 			textView.string = lyrics
 			
 			speechSynthesizer.startSpeakingString(lyrics)
+			enableFields(true)
 		end
 	end
 	
@@ -57,14 +60,17 @@ class SongController < NSWindowController
 	private
 	
 	def loadSongPage(songAttributes)
-		textView.string = "Getting lyrics for '#{songAttributes['song']}' by #{songAttributes['artist']}..."
-		webView.preferences = webPreferences
-		webView.frameLoadDelegate ||= self
-		webView.mainFrameURL = songAttributes['url']
+		if songAttributes['lyrics'] == 'Not found'
+			textView.string = "Sorry, couldn't find that song."
+			enableFields(true)
+		else
+			textView.string = "Getting lyrics for '#{songAttributes['song']}' by #{songAttributes['artist']}..."
+			webView.mainFrameURL = songAttributes['url']
+		end
 	end
 	
 	def speechSynthesizer
-		if !defined?(@speechSynthesizer)
+		unless @speechSynthesizer
 			@speechSynthesizer = NSSpeechSynthesizer.new
 			@speechSynthesizer.delegate = self
 			@speechSynthesizer.voice = "com.apple.speech.synthesis.voice.Alex"
@@ -74,7 +80,7 @@ class SongController < NSWindowController
 	end
 	
 	def webPreferences
-		if !defined?(@webPreferences)
+		unless @webPreferences
 			# No Flash and no images
 			@webPreferences = WebPreferences.standardPreferences
 			@webPreferences.plugInsEnabled = false
@@ -82,5 +88,11 @@ class SongController < NSWindowController
 		end
 	
 		@webPreferences
+	end
+	
+	def enableFields(yn)
+		artistField.enabled = yn
+		songField.enabled = yn
+		button.enabled = yn
 	end
 end
