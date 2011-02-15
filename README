@@ -1,0 +1,10 @@
+MacRubyLyrics
+
+This little app gets lyrics from LyricWiki via their JSON API, loads the full lyrics in a WebView and uses JavaScript to extract them.
+They are then displayed in a TextView and read to you using NSSpeechSynthesizer.
+
+It's a demo project that is meant to serve as a simple demonstration of the power of MacRuby by combining Cocoa and Ruby features.
+
+This is for educational purposes only! Please respect LyricWiki's terms of use: http://lyrics.wikia.com/Help:FAQ
+
+2011, Johannes Fahrenkrug, springenwerk.com
