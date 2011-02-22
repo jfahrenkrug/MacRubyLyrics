@@ -10,13 +10,8 @@ require 'json'
 
 framework "WebKit"
 
-class SongController < NSWindowController	
+class SongController	
 	attr_accessor :webView, :artistField, :songField, :button, :textView
-	
-	def awakeFromNib
-		webView.preferences = webPreferences
-		webView.frameLoadDelegate = self
-	end
 	
 	def loadSong(sender)
 		enableFields(false)
@@ -24,7 +19,9 @@ class SongController < NSWindowController
 		textView.string = "Searching..."
 		
 		speechSynthesizer.stopSpeaking
-		apiURL = "http://lyrics.wikia.com/api.php?fmt=json&artist=#{CGI::escape(artistField.stringValue)}&song=#{CGI::escape(songField.stringValue)}"
+		artist = CGI::escape(artistField.stringValue)
+		song = CGI::escape(songField.stringValue)
+		apiURL = "http://lyrics.wikia.com/api.php?fmt=json&artist=#{artist}&song=#{song}"
 		
 		# Load the JSON asynchronously
 		Thread.new do
@@ -77,17 +74,6 @@ class SongController < NSWindowController
 		end
 		
 		@speechSynthesizer
-	end
-	
-	def webPreferences
-		unless @webPreferences
-			# No Flash and no images
-			@webPreferences = WebPreferences.standardPreferences
-			@webPreferences.plugInsEnabled = false
-			@webPreferences.loadsImagesAutomatically = false
-		end
-	
-		@webPreferences
 	end
 	
 	def enableFields(yn)
